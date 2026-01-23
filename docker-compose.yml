@@ -1,0 +1,27 @@
+services:
+  takumi:
+    image: ghcr.io/flycro/takumi-http:latest
+    # Or build locally:
+    # build: .
+    environment:
+      - TAKUMI_PORT=3000
+      - TAKUMI_LOG_LEVEL=info
+      - TAKUMI_LOAD_DEFAULT_FONTS=true
+    # Optional: mount custom fonts
+    # volumes:
+    #   - ./fonts:/fonts:ro
+    # command: ["--font-dir", "/fonts"]
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  # Example: Laravel app using takumi
+  # app:
+  #   image: your-laravel-app
+  #   environment:
+  #     - TAKUMI_URL=http://takumi:3000
+  #   depends_on:
+  #     takumi:
+  #       condition: service_healthy
