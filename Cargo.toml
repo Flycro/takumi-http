@@ -1,6 +1,6 @@
 [package]
 name = "takumi-http"
-version = "0.66.11"
+version = "0.67.2"
 edition = "2024"
 license = "MIT"
 description = "HTTP server for Takumi image rendering"
@@ -8,7 +8,7 @@ keywords = ["takumi", "image", "rendering", "server", "docker"]
 categories = ["web-programming::http-server", "multimedia::images"]
 
 [dependencies]
-takumi = "0.66"
+takumi = "0.67"
 axum = { version = "0.8", features = ["multipart"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "net"] }
 tower = "0.5"
