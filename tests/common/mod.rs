@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{borrow::Cow, sync::Arc};
 use takumi::GlobalContext;
 use takumi_http::{AppState, Config, create_router};
 
@@ -21,15 +21,15 @@ pub fn create_test_app() -> axum::Router {
     // Load fonts for text rendering
     context
         .font_context
-        .load_and_store(GEIST_FONT, None, None)
+        .load_and_store(Cow::Borrowed(GEIST_FONT), None, None)
         .unwrap();
     context
         .font_context
-        .load_and_store(GEIST_MONO_FONT, None, None)
+        .load_and_store(Cow::Borrowed(GEIST_MONO_FONT), None, None)
         .unwrap();
     context
         .font_context
-        .load_and_store(TWEMOJI_FONT, None, None)
+        .load_and_store(Cow::Borrowed(TWEMOJI_FONT), None, None)
         .unwrap();
 
     let state = Arc::new(AppState::new(config, context, 3));
