@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
 use axum::{
     extract::State,
@@ -84,7 +84,7 @@ pub async fn render(
 
     let buffer = spawn_blocking(move || -> ApiResult<Vec<u8>> {
         let mut buf = Vec::new();
-        write_image(&image, &mut buf, format, quality)?;
+        write_image(Cow::Borrowed(&image), &mut buf, format, quality)?;
         Ok(buf)
     })
     .await

@@ -1,6 +1,6 @@
 [package]
 name = "takumi-http"
-version = "0.68.2"
+version = "0.70.3"
 edition = "2024"
 license = "MIT"
 description = "HTTP server for Takumi image rendering"
@@ -8,7 +8,7 @@ keywords = ["takumi", "image", "rendering", "server", "docker"]
 categories = ["web-programming::http-server", "multimedia::images"]
 
 [dependencies]
-takumi = "0.68"
+takumi = "0.70"
 axum = { version = "0.8", features = ["multipart"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "net"] }
 tower = "0.5"
@@ -22,6 +22,10 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 base64 = "0.22"
 walkdir = "2.5"
 mimalloc = "0.1"
+
+[profile.dev]
+# Takumi's rendering requires more stack in debug builds
+opt-level = 1
 
 [dev-dependencies]
 tower = { version = "0.5", features = ["util"] }
