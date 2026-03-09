@@ -66,7 +66,7 @@ fn load_fonts_from_dir(config: &Config, context: &mut GlobalContext) -> usize {
             }
 
             let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("");
-            if !matches!(ext, "ttf" | "otf" | "woff" | "woff2") {
+            if !matches!(ext, "ttf" | "ttc" | "otf" | "woff" | "woff2") {
                 continue;
             }
 

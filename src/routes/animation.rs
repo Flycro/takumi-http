@@ -3,11 +3,14 @@ use axum::{
     http::header::CONTENT_TYPE,
     response::{IntoResponse, Response},
 };
+use std::borrow::Cow;
+
 use takumi::{
     layout::Viewport,
     rendering::{
-        AnimationFrame as TakumiAnimationFrame, RenderOptionsBuilder, encode_animated_png,
-        encode_animated_webp, render as takumi_render,
+        AnimatedPngOptions, AnimatedWebpOptions, AnimationFrame as TakumiAnimationFrame,
+        RenderOptionsBuilder, encode_animated_png, encode_animated_webp,
+        render as takumi_render,
     },
 };
 use tokio::task::spawn_blocking;
@@ -62,10 +65,14 @@ pub async fn render_animation(
 
         match format {
             AnimationFormat::Webp => {
-                encode_animated_webp(&frames, &mut buf, false, false, None)?;
+                encode_animated_webp(
+                    Cow::Borrowed(&frames),
+                    &mut buf,
+                    AnimatedWebpOptions::default(),
+                )?;
             }
             AnimationFormat::Apng => {
-                encode_animated_png(&frames, &mut buf, None)?;
+                encode_animated_png(&frames, &mut buf, AnimatedPngOptions::default())?;
             }
         }
 
