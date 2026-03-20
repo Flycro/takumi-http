@@ -8,8 +8,8 @@ use axum::{
 use base64::{Engine, engine::general_purpose::STANDARD};
 use takumi::{
     layout::Viewport,
-    rendering::{ImageOutputFormat, RenderOptionsBuilder, render as takumi_render, write_image},
-    resources::image::{ImageSource, load_image_source_from_bytes},
+    rendering::{ImageOutputFormat, RenderOptions, render as takumi_render, write_image},
+    resources::image::ImageSource,
 };
 use tokio::task::spawn_blocking;
 
@@ -47,7 +47,7 @@ pub async fn render(
             ApiError::BadRequest(format!("Invalid base64 in fetchedResources: {e}"))
         })?;
 
-        let image_source = load_image_source_from_bytes(&data)
+        let image_source = ImageSource::from_bytes(&data)
             .map_err(|e| ApiError::ImageDecodeError(format!("{e:?}")))?;
 
         fetched_resources.insert(Arc::from(resource.src), image_source);
@@ -55,7 +55,7 @@ pub async fn render(
 
     // Add resources from multipart file uploads
     for (name, data) in uploaded_files {
-        let image_source = load_image_source_from_bytes(&data)
+        let image_source = ImageSource::from_bytes(&data)
             .map_err(|e| ApiError::ImageDecodeError(format!("Failed to decode {name}: {e:?}")))?;
 
         fetched_resources.insert(Arc::from(name), image_source);
@@ -63,20 +63,19 @@ pub async fn render(
 
     let context = state.context.read().await;
 
-    let mut viewport = Viewport::new(request.options.width, request.options.height);
-    viewport.device_pixel_ratio = request.options.device_pixel_ratio;
+    let viewport = Viewport::new((request.options.width, request.options.height))
+        .with_device_pixel_ratio(request.options.device_pixel_ratio);
 
     let node = request.node;
     let draw_debug_border = request.options.draw_debug_border;
 
-    let options = RenderOptionsBuilder::default()
+    let options = RenderOptions::builder()
         .viewport(viewport)
         .node(node)
         .global(&context)
         .draw_debug_border(draw_debug_border)
         .fetched_resources(fetched_resources)
-        .build()
-        .map_err(|e| ApiError::Internal(format!("Failed to build render options: {e}")))?;
+        .build();
 
     let image = takumi_render(options)?;
 

@@ -115,7 +115,7 @@ async fn test_clear_images() {
     let body_bytes = response.into_body().collect().await.unwrap().to_bytes();
     let json: serde_json::Value = serde_json::from_slice(&body_bytes).unwrap();
 
-    assert!(json["cleared_count"].is_number());
+    assert_eq!(json["message"], "Image cache cleared");
 }
 
 fn create_50x50_png_base64() -> String {

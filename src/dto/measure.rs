@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use axum::body::Bytes;
 use serde::Deserialize;
-use takumi::layout::node::NodeKind;
+use takumi::layout::node::Node;
 
 use crate::{error::ApiError, extractors::json_or_form::MultipartParseable};
 
@@ -22,7 +22,7 @@ fn default_dpr() -> f32 {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MeasureRequest {
-    pub node: NodeKind,
+    pub node: Node,
     #[serde(default)]
     pub options: MeasureOptions,
 }
@@ -36,7 +36,7 @@ impl MultipartParseable for MeasureRequest {
             .get("node")
             .ok_or_else(|| ApiError::BadRequest("Missing 'node' field".into()))?;
 
-        let node: NodeKind = serde_json::from_str(node_json).map_err(ApiError::JsonError)?;
+        let node: Node = serde_json::from_str(node_json).map_err(ApiError::JsonError)?;
 
         let options: MeasureOptions = if let Some(options_json) = fields.get("options") {
             serde_json::from_str(options_json).map_err(ApiError::JsonError)?

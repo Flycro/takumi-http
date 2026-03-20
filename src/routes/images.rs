@@ -1,7 +1,7 @@
 use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
 use base64::{Engine, engine::general_purpose::STANDARD};
 use serde::{Deserialize, Serialize};
-use takumi::resources::image::load_image_source_from_bytes;
+use takumi::resources::image::ImageSource;
 
 use crate::{
     error::{ApiError, ApiResult},
@@ -23,7 +23,6 @@ pub struct AddImageResponse {
 #[derive(Serialize)]
 pub struct ClearImagesResponse {
     pub message: &'static str,
-    pub cleared_count: usize,
 }
 
 pub async fn add_image(
@@ -38,12 +37,12 @@ pub async fn add_image(
         .decode(&request.data)
         .map_err(|e| ApiError::BadRequest(format!("Invalid base64: {e}")))?;
 
-    let image_source = load_image_source_from_bytes(&data)
+    let image_source = ImageSource::from_bytes(&data)
         .map_err(|e| ApiError::ImageDecodeError(format!("{e:?}")))?;
 
-    let context = state.context.write().await;
+    let mut context = state.context.write().await;
     context
-        .persistent_image_store
+        .persistent_image_store_mut()
         .insert(request.src.clone(), image_source);
 
     Ok((
@@ -58,12 +57,10 @@ pub async fn add_image(
 pub async fn clear_images(
     State(state): State<SharedState>,
 ) -> ApiResult<Json<ClearImagesResponse>> {
-    let context = state.context.write().await;
-    let count = context.persistent_image_store.len();
-    context.persistent_image_store.clear();
+    let mut context = state.context.write().await;
+    context.persistent_image_store_mut().clear();
 
     Ok(Json(ClearImagesResponse {
         message: "Image cache cleared",
-        cleared_count: count,
     }))
 }

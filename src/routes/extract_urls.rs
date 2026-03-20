@@ -1,15 +1,12 @@
 use axum::Json;
 use serde::{Deserialize, Serialize};
-use takumi::{
-    layout::node::{Node, NodeKind},
-    resources::task::FetchTaskCollection,
-};
+use takumi::{layout::node::Node, resources::task::FetchTaskCollection};
 
 use crate::error::ApiResult;
 
 #[derive(Debug, Deserialize)]
 pub struct ExtractUrlsRequest {
-    pub node: NodeKind,
+    pub node: Node,
 }
 
 #[derive(Serialize)]

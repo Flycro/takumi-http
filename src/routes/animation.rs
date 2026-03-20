@@ -1,16 +1,15 @@
+use std::borrow::Cow;
+
 use axum::{
     extract::State,
     http::header::CONTENT_TYPE,
     response::{IntoResponse, Response},
 };
-use std::borrow::Cow;
-
 use takumi::{
     layout::Viewport,
     rendering::{
         AnimatedPngOptions, AnimatedWebpOptions, AnimationFrame as TakumiAnimationFrame,
-        RenderOptionsBuilder, encode_animated_png, encode_animated_webp,
-        render as takumi_render,
+        RenderOptions, encode_animated_png, encode_animated_webp, render as takumi_render,
     },
 };
 use tokio::task::spawn_blocking;
@@ -34,19 +33,18 @@ pub async fn render_animation(
 
     let context = state.context.read().await;
 
-    let mut viewport = Viewport::new(request.options.width, request.options.height);
-    viewport.device_pixel_ratio = request.options.device_pixel_ratio;
+    let viewport = Viewport::new((request.options.width, request.options.height))
+        .with_device_pixel_ratio(request.options.device_pixel_ratio);
 
     let mut frames = Vec::with_capacity(request.frames.len());
 
     for frame in request.frames {
-        let options = RenderOptionsBuilder::default()
+        let options = RenderOptions::builder()
             .viewport(viewport)
             .node(frame.node)
             .global(&context)
             .draw_debug_border(request.options.draw_debug_border)
-            .build()
-            .map_err(|e| ApiError::Internal(format!("Failed to build render options: {e}")))?;
+            .build();
 
         let image = takumi_render(options)?;
         frames.push(TakumiAnimationFrame::new(image, frame.duration_ms));

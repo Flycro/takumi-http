@@ -212,7 +212,7 @@ The `"src": "user-avatar"` in the image node matches the `"src"` used when addin
 
 ```bash
 curl -X DELETE http://localhost:3000/images
-# Returns: {"message": "Image cache cleared", "cleared_count": 5}
+# Returns: {"message": "Image cache cleared"}
 ```
 
 **Image sources priority:**

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use axum::body::Bytes;
 use serde::Deserialize;
-use takumi::layout::node::NodeKind;
+use takumi::layout::node::Node;
 
 use crate::{error::ApiError, extractors::json_or_form::MultipartParseable};
 
@@ -19,7 +19,7 @@ pub enum AnimationFormat {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AnimationFrame {
-    pub node: NodeKind,
+    pub node: Node,
     pub duration_ms: u32,
 }
 

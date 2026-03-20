@@ -1,7 +1,7 @@
-use std::{borrow::Cow, fs::read, net::SocketAddr, sync::Arc};
+use std::{fs::read, net::SocketAddr, sync::Arc};
 
 use mimalloc::MiMalloc;
-use takumi::GlobalContext;
+use takumi::{GlobalContext, resources::font::FontResource};
 use tokio::net::TcpListener;
 use tower_http::{limit::RequestBodyLimitLayer, trace::TraceLayer};
 use tracing::{error, info};
@@ -21,8 +21,8 @@ fn load_default_fonts(context: &mut GlobalContext) -> usize {
     let mut count = 0;
 
     if context
-        .font_context
-        .load_and_store(Cow::Borrowed(GEIST_FONT), None, None)
+        .font_context_mut()
+        .load_and_store(FontResource::new(GEIST_FONT))
         .is_ok()
     {
         info!("Loaded embedded font: Geist");
@@ -30,8 +30,8 @@ fn load_default_fonts(context: &mut GlobalContext) -> usize {
     }
 
     if context
-        .font_context
-        .load_and_store(Cow::Borrowed(GEIST_MONO_FONT), None, None)
+        .font_context_mut()
+        .load_and_store(FontResource::new(GEIST_MONO_FONT))
         .is_ok()
     {
         info!("Loaded embedded font: Geist Mono");
@@ -39,8 +39,8 @@ fn load_default_fonts(context: &mut GlobalContext) -> usize {
     }
 
     if context
-        .font_context
-        .load_and_store(Cow::Borrowed(TWEMOJI_FONT), None, None)
+        .font_context_mut()
+        .load_and_store(FontResource::new(TWEMOJI_FONT))
         .is_ok()
     {
         info!("Loaded embedded font: Twemoji");
@@ -72,7 +72,7 @@ fn load_fonts_from_dir(config: &Config, context: &mut GlobalContext) -> usize {
 
             match read(path) {
                 Ok(data) => {
-                    if let Err(e) = context.font_context.load_and_store(Cow::Owned(data), None, None) {
+                    if let Err(e) = context.font_context_mut().load_and_store(FontResource::new(data)) {
                         error!("Failed to load font {}: {e:?}", path.display());
                     } else {
                         info!("Loaded font: {}", path.display());
