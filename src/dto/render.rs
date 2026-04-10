@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use axum::body::Bytes;
 use serde::Deserialize;
 use takumi::layout::node::Node;
+use takumi::layout::style::KeyframesRule;
 
 use crate::{error::ApiError, extractors::json_or_form::MultipartParseable};
 
@@ -29,6 +30,8 @@ pub struct RenderOptions {
     pub device_pixel_ratio: f32,
     #[serde(default)]
     pub draw_debug_border: bool,
+    #[serde(default)]
+    pub time_ms: u64,
 }
 
 fn default_dpr() -> f32 {
@@ -50,6 +53,13 @@ pub struct RenderRequest {
     pub options: RenderOptions,
     #[serde(default)]
     pub fetched_resources: Vec<FetchedResource>,
+    #[serde(
+        default,
+        deserialize_with = "takumi::keyframes::deserialize_optional_keyframes"
+    )]
+    pub keyframes: Option<Vec<KeyframesRule>>,
+    #[serde(default)]
+    pub stylesheets: Vec<String>,
 }
 
 impl MultipartParseable for RenderRequest {
@@ -69,10 +79,24 @@ impl MultipartParseable for RenderRequest {
             RenderOptions::default()
         };
 
+        let keyframes = if let Some(keyframes_json) = fields.get("keyframes") {
+            Some(serde_json::from_str(keyframes_json).map_err(ApiError::JsonError)?)
+        } else {
+            None
+        };
+
+        let stylesheets: Vec<String> = if let Some(stylesheets_json) = fields.get("stylesheets") {
+            serde_json::from_str(stylesheets_json).map_err(ApiError::JsonError)?
+        } else {
+            Vec::new()
+        };
+
         Ok(RenderRequest {
             node,
             options,
             fetched_resources: Vec::new(),
+            keyframes,
+            stylesheets,
         })
     }
 }

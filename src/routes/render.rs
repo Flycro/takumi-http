@@ -8,6 +8,7 @@ use axum::{
 use base64::{Engine, engine::general_purpose::STANDARD};
 use takumi::{
     layout::Viewport,
+    layout::style::StyleSheet,
     rendering::{ImageOutputFormat, RenderOptions, render as takumi_render, write_image},
     resources::image::ImageSource,
 };
@@ -38,6 +39,7 @@ pub async fn render(
 
     let format = convert_format(&request.options.format);
     let quality = request.options.quality;
+    let time_ms = request.options.time_ms;
 
     let mut fetched_resources: HashMap<Arc<str>, ImageSource> = HashMap::new();
 
@@ -61,6 +63,18 @@ pub async fn render(
         fetched_resources.insert(Arc::from(name), image_source);
     }
 
+    // Build stylesheet from CSS strings and/or structured keyframes
+    let mut stylesheet = if !request.stylesheets.is_empty() {
+        StyleSheet::parse_list(&request.stylesheets)
+            .map_err(|e| ApiError::BadRequest(format!("Invalid stylesheet: {e}")))?
+    } else {
+        StyleSheet::default()
+    };
+
+    if let Some(keyframes) = request.keyframes {
+        stylesheet.extend_keyframes(keyframes);
+    }
+
     let context = state.context.read().await;
 
     let viewport = Viewport::new((request.options.width, request.options.height))
@@ -75,6 +89,8 @@ pub async fn render(
         .global(&context)
         .draw_debug_border(draw_debug_border)
         .fetched_resources(fetched_resources)
+        .stylesheet(stylesheet)
+        .time_ms(time_ms)
         .build();
 
     let image = takumi_render(options)?;
