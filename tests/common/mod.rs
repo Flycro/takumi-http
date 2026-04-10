@@ -20,15 +20,15 @@ pub fn create_test_app() -> axum::Router {
 
     // Load fonts for text rendering
     context
-        .font_context_mut()
+        .font_context
         .load_and_store(FontResource::new(GEIST_FONT))
         .unwrap();
     context
-        .font_context_mut()
+        .font_context
         .load_and_store(FontResource::new(GEIST_MONO_FONT))
         .unwrap();
     context
-        .font_context_mut()
+        .font_context
         .load_and_store(FontResource::new(TWEMOJI_FONT))
         .unwrap();
 

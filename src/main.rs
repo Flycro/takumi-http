@@ -21,7 +21,7 @@ fn load_default_fonts(context: &mut GlobalContext) -> usize {
     let mut count = 0;
 
     if context
-        .font_context_mut()
+        .font_context
         .load_and_store(FontResource::new(GEIST_FONT))
         .is_ok()
     {
@@ -30,7 +30,7 @@ fn load_default_fonts(context: &mut GlobalContext) -> usize {
     }
 
     if context
-        .font_context_mut()
+        .font_context
         .load_and_store(FontResource::new(GEIST_MONO_FONT))
         .is_ok()
     {
@@ -39,7 +39,7 @@ fn load_default_fonts(context: &mut GlobalContext) -> usize {
     }
 
     if context
-        .font_context_mut()
+        .font_context
         .load_and_store(FontResource::new(TWEMOJI_FONT))
         .is_ok()
     {
@@ -72,7 +72,7 @@ fn load_fonts_from_dir(config: &Config, context: &mut GlobalContext) -> usize {
 
             match read(path) {
                 Ok(data) => {
-                    if let Err(e) = context.font_context_mut().load_and_store(FontResource::new(data)) {
+                    if let Err(e) = context.font_context.load_and_store(FontResource::new(data)) {
                         error!("Failed to load font {}: {e:?}", path.display());
                     } else {
                         info!("Loaded font: {}", path.display());

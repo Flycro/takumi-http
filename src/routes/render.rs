@@ -39,7 +39,7 @@ pub async fn render(
     let format = convert_format(&request.options.format);
     let quality = request.options.quality;
 
-    let mut fetched_resources: HashMap<Arc<str>, Arc<ImageSource>> = HashMap::new();
+    let mut fetched_resources: HashMap<Arc<str>, ImageSource> = HashMap::new();
 
     // Add resources from JSON (base64 encoded)
     for resource in request.fetched_resources {

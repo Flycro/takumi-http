@@ -40,9 +40,9 @@ pub async fn add_image(
     let image_source = ImageSource::from_bytes(&data)
         .map_err(|e| ApiError::ImageDecodeError(format!("{e:?}")))?;
 
-    let mut context = state.context.write().await;
+    let context = state.context.write().await;
     context
-        .persistent_image_store_mut()
+        .persistent_image_store
         .insert(request.src.clone(), image_source);
 
     Ok((
@@ -57,8 +57,8 @@ pub async fn add_image(
 pub async fn clear_images(
     State(state): State<SharedState>,
 ) -> ApiResult<Json<ClearImagesResponse>> {
-    let mut context = state.context.write().await;
-    context.persistent_image_store_mut().clear();
+    let context = state.context.write().await;
+    context.persistent_image_store.clear();
 
     Ok(Json(ClearImagesResponse {
         message: "Image cache cleared",

@@ -1,6 +1,6 @@
 use axum::Json;
 use serde::{Deserialize, Serialize};
-use takumi::{layout::node::Node, resources::task::FetchTaskCollection};
+use takumi::layout::node::Node;
 
 use crate::error::ApiResult;
 
@@ -17,13 +17,10 @@ pub struct ExtractUrlsResponse {
 pub async fn extract_urls(
     Json(request): Json<ExtractUrlsRequest>,
 ) -> ApiResult<Json<ExtractUrlsResponse>> {
-    let mut collection = FetchTaskCollection::default();
-    request.node.collect_fetch_tasks(&mut collection);
-
-    let urls: Vec<String> = collection
-        .into_inner()
-        .into_iter()
-        .map(|arc| arc.to_string())
+    let urls: Vec<String> = request
+        .node
+        .resource_urls()
+        .map(|s| s.to_string())
         .collect();
 
     Ok(Json(ExtractUrlsResponse { urls }))
