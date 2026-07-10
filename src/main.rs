@@ -1,7 +1,7 @@
 use std::{fs::read, net::SocketAddr, sync::Arc};
 
 use mimalloc::MiMalloc;
-use takumi::{GlobalContext, resources::font::FontResource};
+use takumi::prelude::{FontResource, Fonts};
 use tokio::net::TcpListener;
 use tower_http::{limit::RequestBodyLimitLayer, trace::TraceLayer};
 use tracing::{error, info};
@@ -17,32 +17,20 @@ const GEIST_FONT: &[u8] = include_bytes!("../assets/fonts/Geist[wght].woff2");
 const GEIST_MONO_FONT: &[u8] = include_bytes!("../assets/fonts/GeistMono[wght].woff2");
 const TWEMOJI_FONT: &[u8] = include_bytes!("../assets/fonts/TwemojiMozilla-colr.woff2");
 
-fn load_default_fonts(context: &mut GlobalContext) -> usize {
+fn load_default_fonts(fonts: &mut Fonts) -> usize {
     let mut count = 0;
 
-    if context
-        .font_context
-        .load_and_store(FontResource::new(GEIST_FONT))
-        .is_ok()
-    {
+    if fonts.register(FontResource::new(GEIST_FONT)).is_ok() {
         info!("Loaded embedded font: Geist");
         count += 1;
     }
 
-    if context
-        .font_context
-        .load_and_store(FontResource::new(GEIST_MONO_FONT))
-        .is_ok()
-    {
+    if fonts.register(FontResource::new(GEIST_MONO_FONT)).is_ok() {
         info!("Loaded embedded font: Geist Mono");
         count += 1;
     }
 
-    if context
-        .font_context
-        .load_and_store(FontResource::new(TWEMOJI_FONT))
-        .is_ok()
-    {
+    if fonts.register(FontResource::new(TWEMOJI_FONT)).is_ok() {
         info!("Loaded embedded font: Twemoji");
         count += 1;
     }
@@ -50,7 +38,7 @@ fn load_default_fonts(context: &mut GlobalContext) -> usize {
     count
 }
 
-fn load_fonts_from_dir(config: &Config, context: &mut GlobalContext) -> usize {
+fn load_fonts_from_dir(config: &Config, fonts: &mut Fonts) -> usize {
     let mut count = 0;
 
     if let Some(font_dir) = &config.font_dir {
@@ -72,7 +60,7 @@ fn load_fonts_from_dir(config: &Config, context: &mut GlobalContext) -> usize {
 
             match read(path) {
                 Ok(data) => {
-                    if let Err(e) = context.font_context.load_and_store(FontResource::new(data)) {
+                    if let Err(e) = fonts.register(FontResource::new(data)) {
                         error!("Failed to load font {}: {e:?}", path.display());
                     } else {
                         info!("Loaded font: {}", path.display());
@@ -101,18 +89,18 @@ async fn main() {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    let mut context = GlobalContext::default();
+    let mut fonts = Fonts::default();
     let mut fonts_loaded = 0;
 
     if config.load_default_fonts {
-        fonts_loaded += load_default_fonts(&mut context);
+        fonts_loaded += load_default_fonts(&mut fonts);
     }
 
-    fonts_loaded += load_fonts_from_dir(&config, &mut context);
+    fonts_loaded += load_fonts_from_dir(&config, &mut fonts);
 
     info!("Loaded {fonts_loaded} fonts");
 
-    let state = Arc::new(AppState::new(config.clone(), context, fonts_loaded));
+    let state = Arc::new(AppState::new(config.clone(), fonts, fonts_loaded));
 
     let app = create_router(state)
         .layer(TraceLayer::new_for_http())

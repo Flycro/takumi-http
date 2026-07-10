@@ -4,6 +4,7 @@ use axum::{
     body::Body,
     http::{Request, StatusCode, header::CONTENT_TYPE},
 };
+use base64::Engine;
 use image::{ImageFormat, RgbaImage};
 use std::io::Cursor;
 use tower::ServiceExt;
@@ -103,6 +104,201 @@ async fn test_render_jpeg_format() {
 
     assert_eq!(response.status(), StatusCode::OK);
     assert_eq!(response.headers().get(CONTENT_TYPE).unwrap(), "image/jpeg");
+}
+
+#[tokio::test]
+async fn test_render_lossless_webp_format() {
+    let app = common::create_test_app();
+    let body = r#"{
+        "node": {"type": "container", "tw": "w-[32] h-[32] bg-blue-500"},
+        "options": {"format": "webp", "lossless": true}
+    }"#;
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/render")
+                .header(CONTENT_TYPE, "application/json")
+                .body(Body::from(body))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(response.headers().get(CONTENT_TYPE).unwrap(), "image/webp");
+}
+
+#[tokio::test]
+async fn test_render_ico_format() {
+    let app = common::create_test_app();
+    let body = r#"{
+        "node": {"type": "container", "tw": "w-[32] h-[32] bg-blue-500"},
+        "options": {"format": "ico", "width": 32, "height": 32}
+    }"#;
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/render")
+                .header(CONTENT_TYPE, "application/json")
+                .body(Body::from(body))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(
+        response.headers().get(CONTENT_TYPE).unwrap(),
+        "image/x-icon"
+    );
+}
+
+#[tokio::test]
+async fn test_render_html_to_svg() {
+    let app = common::create_test_app();
+    let body = r#"{
+        "html": "<div tw='w-[120px] h-[60px] bg-blue-500'><span>Hello</span></div>",
+        "options": {
+            "format": "svg",
+            "width": 120,
+            "height": 60,
+            "fontFamilies": ["Geist"],
+            "lang": "en-US"
+        }
+    }"#;
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/render")
+                .header(CONTENT_TYPE, "application/json")
+                .body(Body::from(body))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(
+        response.headers().get(CONTENT_TYPE).unwrap(),
+        "image/svg+xml"
+    );
+    let bytes = http_body_util::BodyExt::collect(response.into_body())
+        .await
+        .unwrap()
+        .to_bytes();
+    assert!(bytes.starts_with(b"<svg"));
+}
+
+#[tokio::test]
+async fn test_render_with_dithering() {
+    let app = common::create_test_app();
+    let body = r#"{
+        "node": {"type": "container", "tw": "w-[32] h-[32] bg-gradient-to-r from-black to-white"},
+        "options": {"format": "png", "dithering": "orderedBayer"}
+    }"#;
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/render")
+                .header(CONTENT_TYPE, "application/json")
+                .body(Body::from(body))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+}
+
+#[tokio::test]
+async fn test_render_fetches_remote_image() {
+    let png = create_test_png();
+    let resource_app = axum::Router::new().route(
+        "/image.png",
+        axum::routing::get(move || {
+            let png = png.clone();
+            async move { ([(CONTENT_TYPE, "image/png")], png) }
+        }),
+    );
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let address = listener.local_addr().unwrap();
+    tokio::spawn(async move { axum::serve(listener, resource_app).await.unwrap() });
+
+    let app = common::create_test_app();
+    let body = serde_json::json!({
+        "node": {
+            "type": "image",
+            "src": format!("http://{address}/image.png"),
+            "tw": "w-[10px] h-[10px]"
+        },
+        "options": {
+            "format": "png",
+            "width": 10,
+            "height": 10,
+            "fetchImages": true,
+            "fetchCache": false,
+            "fetchTimeoutMs": 2000
+        }
+    });
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/render")
+                .header(CONTENT_TYPE, "application/json")
+                .body(Body::from(body.to_string()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+}
+
+#[tokio::test]
+async fn test_render_with_request_font() {
+    let app = common::create_test_app();
+    let font = include_bytes!("../assets/fonts/GeistMono[wght].woff2");
+    let body = serde_json::json!({
+        "node": {
+            "type": "text",
+            "text": "Request font",
+            "tw": "text-2xl"
+        },
+        "options": {
+            "format": "png",
+            "width": 240,
+            "height": 80,
+            "fonts": [{
+                "data": base64::engine::general_purpose::STANDARD.encode(font)
+            }],
+            "fontFamilies": ["Geist Mono"],
+            "lang": "en"
+        }
+    });
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/render")
+                .header(CONTENT_TYPE, "application/json")
+                .body(Body::from(body.to_string()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
 }
 
 #[tokio::test]

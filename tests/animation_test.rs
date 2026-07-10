@@ -346,3 +346,56 @@ async fn test_render_animation_frames_and_scenes_exclusive() {
 
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 }
+
+#[tokio::test]
+async fn test_render_animation_rejects_excessive_fps() {
+    let app = common::create_test_app();
+    let body = r#"{
+        "scenes": [{
+            "node": {"type": "container", "tw": "w-[50] h-[50] bg-red-500"},
+            "durationMs": 100
+        }],
+        "options": {"fps": 51, "format": "gif", "width": 50, "height": 50}
+    }"#;
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/render/animation")
+                .header(CONTENT_TYPE, "application/json")
+                .body(Body::from(body))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
+}
+
+#[tokio::test]
+async fn test_render_streamed_html_scene() {
+    let app = common::create_test_app();
+    let body = r#"{
+        "scenes": [{
+            "html": "<div tw='w-[50px] h-[50px] bg-red-500'></div>",
+            "durationMs": 100
+        }],
+        "options": {"fps": 10, "format": "webp", "width": 50, "height": 50}
+    }"#;
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/render/animation")
+                .header(CONTENT_TYPE, "application/json")
+                .body(Body::from(body))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(response.headers().get(CONTENT_TYPE).unwrap(), "image/webp");
+}

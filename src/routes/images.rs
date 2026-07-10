@@ -1,7 +1,7 @@
 use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
 use base64::{Engine, engine::general_purpose::STANDARD};
 use serde::{Deserialize, Serialize};
-use takumi::resources::image::ImageSource;
+use takumi::prelude::ImageSource;
 
 use crate::{
     error::{ApiError, ApiResult},
@@ -37,13 +37,14 @@ pub async fn add_image(
         .decode(&request.data)
         .map_err(|e| ApiError::BadRequest(format!("Invalid base64: {e}")))?;
 
-    let image_source = ImageSource::from_bytes(&data)
-        .map_err(|e| ApiError::ImageDecodeError(format!("{e:?}")))?;
+    let image_source =
+        ImageSource::from_bytes(&data).map_err(|e| ApiError::ImageDecodeError(format!("{e:?}")))?;
 
-    let context = state.context.write().await;
-    context
-        .persistent_image_store
-        .insert(request.src.clone(), image_source);
+    state
+        .images
+        .write()
+        .await
+        .insert(request.src.clone().into(), image_source);
 
     Ok((
         StatusCode::CREATED,
@@ -57,8 +58,8 @@ pub async fn add_image(
 pub async fn clear_images(
     State(state): State<SharedState>,
 ) -> ApiResult<Json<ClearImagesResponse>> {
-    let context = state.context.write().await;
-    context.persistent_image_store.clear();
+    state.images.write().await.clear();
+    state.fetched_bytes.write().await.clear();
 
     Ok(Json(ClearImagesResponse {
         message: "Image cache cleared",

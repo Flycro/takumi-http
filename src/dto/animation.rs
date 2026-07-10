@@ -2,10 +2,16 @@ use std::collections::HashMap;
 
 use axum::body::Bytes;
 use serde::Deserialize;
-use takumi::layout::node::Node;
-use takumi::layout::style::KeyframesRule;
+use takumi::prelude::{KeyframesRule, Node};
 
-use crate::{error::ApiError, extractors::json_or_form::MultipartParseable};
+use crate::{
+    dto::{
+        render::FetchedResource,
+        resources::{Dithering, FontInput, default_true},
+    },
+    error::ApiError,
+    extractors::json_or_form::MultipartParseable,
+};
 
 #[derive(Debug, Clone, Copy, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -20,18 +26,20 @@ pub enum AnimationFormat {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AnimationFrame {
-    pub node: Node,
+    pub node: Option<Node>,
+    pub html: Option<String>,
     pub duration_ms: u32,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AnimationScene {
-    pub node: Node,
+    pub node: Option<Node>,
+    pub html: Option<String>,
     pub duration_ms: u32,
 }
 
-#[derive(Debug, Deserialize, Default)]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AnimationOptions {
     pub width: Option<u32>,
@@ -45,10 +53,43 @@ pub struct AnimationOptions {
     pub fps: Option<u32>,
     pub quality: Option<u8>,
     pub loop_count: Option<u16>,
+    #[serde(default)]
+    pub dithering: Dithering,
+    #[serde(default)]
+    pub fonts: Vec<FontInput>,
+    pub font_families: Option<Vec<String>>,
+    pub lang: Option<String>,
+    #[serde(default)]
+    pub fetch_images: bool,
+    pub fetch_timeout_ms: Option<u64>,
+    #[serde(default = "default_true")]
+    pub fetch_cache: bool,
 }
 
 fn default_dpr() -> f32 {
     1.0
+}
+
+impl Default for AnimationOptions {
+    fn default() -> Self {
+        Self {
+            width: None,
+            height: None,
+            format: AnimationFormat::default(),
+            device_pixel_ratio: default_dpr(),
+            draw_debug_border: false,
+            fps: None,
+            quality: None,
+            loop_count: None,
+            dithering: Dithering::default(),
+            fonts: Vec::new(),
+            font_families: None,
+            lang: None,
+            fetch_images: false,
+            fetch_timeout_ms: None,
+            fetch_cache: true,
+        }
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -62,11 +103,13 @@ pub struct AnimationRequest {
     pub options: AnimationOptions,
     #[serde(
         default,
-        deserialize_with = "takumi::keyframes::deserialize_optional_keyframes"
+        deserialize_with = "takumi::unstable::base::keyframes::deserialize_optional_keyframes"
     )]
     pub keyframes: Option<Vec<KeyframesRule>>,
     #[serde(default)]
     pub stylesheets: Vec<String>,
+    #[serde(default)]
+    pub fetched_resources: Vec<FetchedResource>,
 }
 
 impl MultipartParseable for AnimationRequest {
@@ -110,6 +153,7 @@ impl MultipartParseable for AnimationRequest {
             options,
             keyframes,
             stylesheets,
+            fetched_resources: Vec::new(),
         })
     }
 }

@@ -20,6 +20,30 @@ For documentation on the node tree schema, available node types, and styling opt
 | DELETE | `/images` | Clear image cache |
 | POST | `/extract-urls` | Extract resource URLs from node tree |
 
+Static rendering supports PNG, JPEG, lossy or lossless WebP, ICO, and SVG. Set
+`"lossless": true` with the WebP format to select lossless encoding.
+
+## Takumi v2 options
+
+`/render` and `/measure` accept either `node` or `html`. Animation frames and
+scenes also accept either field. Supplying both is rejected.
+
+Render, measure, and animation options support:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `fonts` | array | Base64 fonts as `{ "data": "..." }` or remote font URL strings |
+| `fontFamilies` | string array | Ordered font fallback families |
+| `lang` | string | Root BCP-47 language tag |
+| `fetchImages` | boolean | Fetch image URLs referenced by the input |
+| `fetchTimeoutMs` | integer | Remote image/font timeout; defaults to 10000 |
+| `fetchCache` | boolean | Reuse fetched bytes between requests; defaults to true |
+| `dithering` | string | `none`, `orderedBayer`, or `floydSteinberg` |
+
+SVG output uses `"format": "svg"`. Scene animations are streamed into their
+encoder to keep memory bounded. Explicit frame arrays remain eager because each
+frame may have an independent duration.
+
 ## Usage
 
 ### Docker

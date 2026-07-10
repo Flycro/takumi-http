@@ -142,3 +142,26 @@ async fn test_measure_invalid_node() {
 
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 }
+
+#[tokio::test]
+async fn test_measure_html() {
+    let app = common::create_test_app();
+    let body = r#"{
+        "html": "<div tw='w-[240px] h-[80px]'></div>",
+        "options": {"width": 500, "height": 500}
+    }"#;
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/measure")
+                .header(CONTENT_TYPE, "application/json")
+                .body(Body::from(body))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+}

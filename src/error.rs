@@ -4,6 +4,7 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use serde::Serialize;
+use takumi::prelude::Error as TakumiError;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -15,7 +16,7 @@ pub enum ApiError {
     Validation(String),
 
     #[error("Processing error: {0}")]
-    ProcessingError(#[from] takumi::Error),
+    ProcessingError(#[from] TakumiError),
 
     #[error("Invalid JSON: {0}")]
     JsonError(#[from] serde_json::Error),
@@ -51,14 +52,18 @@ impl IntoResponse for ApiError {
             ApiError::ImageDecodeError(_) => (StatusCode::UNPROCESSABLE_ENTITY, "ImageDecodeError"),
             ApiError::CacheDisabled => (StatusCode::SERVICE_UNAVAILABLE, "CacheDisabled"),
             ApiError::ProcessingError(e) => match e {
-                takumi::Error::InvalidViewport => {
+                TakumiError::InvalidViewport => {
                     (StatusCode::UNPROCESSABLE_ENTITY, "InvalidViewport")
                 }
-                takumi::Error::ImageResolveError(_) => {
+                TakumiError::ImageResolveError(_) => {
                     (StatusCode::UNPROCESSABLE_ENTITY, "ImageResolveError")
                 }
-                takumi::Error::FontError(_) => (StatusCode::UNPROCESSABLE_ENTITY, "FontError"),
-                takumi::Error::LayoutError(_) => (StatusCode::UNPROCESSABLE_ENTITY, "LayoutError"),
+                TakumiError::FontError(_) => (StatusCode::UNPROCESSABLE_ENTITY, "FontError"),
+                TakumiError::Layout(_) => (StatusCode::UNPROCESSABLE_ENTITY, "LayoutError"),
+                TakumiError::AnimationFrameRateTooHigh { .. } => (
+                    StatusCode::UNPROCESSABLE_ENTITY,
+                    "AnimationFrameRateTooHigh",
+                ),
                 _ => (StatusCode::INTERNAL_SERVER_ERROR, "ProcessingError"),
             },
             ApiError::Internal(_) => (StatusCode::INTERNAL_SERVER_ERROR, "InternalError"),

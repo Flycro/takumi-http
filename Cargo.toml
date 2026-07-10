@@ -1,6 +1,6 @@
 [package]
 name = "takumi-http"
-version = "1.4.1"
+version = "2.0.2"
 edition = "2024"
 license = "MIT"
 description = "HTTP server for Takumi image rendering"
@@ -8,7 +8,7 @@ keywords = ["takumi", "image", "rendering", "server", "docker"]
 categories = ["web-programming::http-server", "multimedia::images"]
 
 [dependencies]
-takumi = "1.4.1"
+takumi = { version = "2.0.2", features = ["from-html", "svg-backend", "unstable"] }
 axum = { version = "0.8", features = ["multipart"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "net"] }
 tower = "0.5"
@@ -20,6 +20,7 @@ thiserror = "2.0"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 base64 = "0.22"
+reqwest = { version = "0.13", default-features = false, features = ["rustls"] }
 walkdir = "2.5"
 mimalloc = "0.1"
 
